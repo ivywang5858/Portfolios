@@ -1,2 +1,2 @@
-# GARCH
+# Portfolio Cases
 GARCH MODEL Testing
