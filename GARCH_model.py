@@ -16,7 +16,7 @@ sp_data.set_index('Date',inplace = True)
 
 #GARCH Model Fit
 basic_gm = arch_model(sp_data['Return'], p =1, q = 1, mean = 'constant', vol = 'GARCH', dist = 'normal')
-# gm_result = basic_gm.fit(update_freq = 4)
+gm_result = basic_gm.fit(update_freq = 4,disp='off')
 # print(gm_result.summary())
 # gm_result.plot()
 # plt.show()
@@ -61,6 +61,37 @@ egarch_vol = egarch_result.conditional_volatility
 # plt.show()
 
 # GARCH Rolling Window Forecast
+first_obs = 0
+end_obs = 100
+forecasts= {}
+forecasts_ex= {}
 basic_gm = arch_model(sp_data['Return'], p =1, q = 1, mean = 'constant', vol = 'GARCH', dist = 'normal')
-for i in range(30):
-    gm_result = basic_gm.fit(first_obs= i+1000, last_obs= i+1500, update_freq = 5)
+#Rolling Window to forecast variance
+#Fixed Window
+for i in range(300):
+    gm_result = basic_gm.fit(first_obs= i+first_obs, last_obs= i+end_obs, update_freq = 5, disp = 'off')
+    temp_result = gm_result.forecast(horizon = 1).variance
+    fcast = temp_result.iloc[0]
+    forecasts[fcast.name] = fcast
+forecast_var = pd.DataFrame(forecasts).T
+
+#Expanding Window
+for i in range(300):
+    gm_result_ex = basic_gm.fit(first_obs= first_obs, last_obs= i+end_obs, update_freq = 5, disp = 'off')
+    temp_result_ex = gm_result_ex.forecast(horizon = 1).variance
+    fcast_ex = temp_result_ex.iloc[0]
+    forecasts_ex[fcast_ex.name] = fcast_ex
+forecast_var_ex = pd.DataFrame(forecasts_ex).T
+
+#Plot the forecast variance
+# plt.plot(forecast_var, color = 'red')
+# plt.plot(sp_data.Return['2020-05-27':'2021-08-03'],color='green')
+# plt.show()
+
+#Plot both volatility forecast - expending and fixed window
+vol_fixedwin = np.sqrt(forecast_var)
+vol_expandwin = np.sqrt(forecast_var_ex)
+plt.plot(vol_fixedwin, color = 'red')
+plt.plot(vol_expandwin, color = 'blue')
+plt.plot(sp_data['Return']['2020-05-27':'2021-08-03'],color='green')
+plt.show()
