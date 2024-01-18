@@ -65,6 +65,7 @@ first_obs = 0
 end_obs = 100
 forecasts= {}
 forecasts_ex= {}
+var = {}
 basic_gm = arch_model(sp_data['Return'], p =1, q = 1, mean = 'constant', vol = 'GARCH', dist = 'normal')
 #Rolling Window to forecast variance
 #Fixed Window
@@ -81,7 +82,12 @@ for i in range(300):
     temp_result_ex = gm_result_ex.forecast(horizon = 1).variance
     fcast_ex = temp_result_ex.iloc[0]
     forecasts_ex[fcast_ex.name] = fcast_ex
+
+    # #real vol
+    # real_var = sp_data['Return'][i+first_obs:i+end_obs].var()
+    # var[fcast_ex.name] = real_var
 forecast_var_ex = pd.DataFrame(forecasts_ex).T
+# var_pd = pd.DataFrame(var,index=[0]).T
 
 #Plot the forecast variance
 # plt.plot(forecast_var, color = 'red')
@@ -93,5 +99,6 @@ vol_fixedwin = np.sqrt(forecast_var)
 vol_expandwin = np.sqrt(forecast_var_ex)
 plt.plot(vol_fixedwin, color = 'red')
 plt.plot(vol_expandwin, color = 'blue')
-plt.plot(sp_data['Return']['2020-05-27':'2021-08-03'],color='green')
+plt.plot(sp_data['Return']['2020-05-27':'2021-08-04'],color='gold')
+# plt.plot(var_pd['2020-05-27':'2021-08-03'],color='green')
 plt.show()
