@@ -13,6 +13,7 @@ sp_data = sp_data.dropna()
 sp_data.set_index('Date',inplace = True)
 
 #Random Walk
+#to simulate a random walk in one year
 mu = np.mean(sp_data['Return'])
 vol = np.std(sp_data['Return'])
 T = 252
@@ -23,6 +24,7 @@ forecasted_values = S0*rand_rets.cumprod()
 # plt.show()
 
 #Monte Carlo Simulations
+#a series of Monte Carlo simulations of a single asset starting at stock price S0 at T0
 for i in range(100):
     rand_rets = np.random.normal(mu,vol,T)+1
     forecasted_values = S0 * rand_rets.cumprod()
@@ -30,6 +32,7 @@ for i in range(100):
 # plt.show()
 
 #VaR(99)
+#to calculate the VaR(95) of 100 Monte Carlo simulations
 sim_returns = []
 for i in range(100):
     rand_ret = np.random.normal(mu,vol,T)
