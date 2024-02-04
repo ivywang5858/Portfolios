@@ -5,6 +5,16 @@ from os import chdir
 from arch import arch_model
 import matplotlib.pyplot as plt
 
+
+def return_processing(file):
+    data = pd.read_csv(file)
+    data = data[['Date', 'Adj Close']]
+    data['Date'] = pd.to_datetime(data['Date'])
+    data = data.rename(columns={'Adj Close': 'Price'})
+    data['Return'] = data['Price'].pct_change() * 100
+    data = data.dropna()
+    data.set_index('Date', inplace=True)
+    return data
 def GARCH_model_analysis(data):
     # GARCH Model Fit
     basic_gm = arch_model(data['Return'], p =1, q = 1, mean = 'constant', vol = 'GARCH', dist = 'normal')
@@ -153,33 +163,43 @@ def VaR_analysis(data):
     plt.legend(loc='upper right')
     plt.show()
 
+def dynamic_covariance(data_a, data_b):
+    #Dynamic Covariance in portfolio optimization
+    basic_gm_sp = arch_model(data_a['Return']['2020-01-02':'2020-12-31'], p=1, q=1, mean='constant', vol='GARCH', dist='t')
+    gm_result_sp = basic_gm_sp.fit(disp='off')
+    basic_gm_bitcoin = arch_model(data_b['Return']['2020-01-02':'2020-12-31'], p=1, q=1, mean='constant', vol='GARCH',dist='t')
+    gm_result_bitcoin = basic_gm_bitcoin.fit(disp='off')
+    sp_vol = gm_result_sp.conditional_volatility
+    sp_std_resid = gm_result_sp.resid/sp_vol
+    bitcoin_vol = gm_result_bitcoin.conditional_volatility
+    bitcoin_std_resid = gm_result_bitcoin.resid/bitcoin_vol
+
+    #calc correlation
+    corr = np.corrcoef(sp_std_resid,bitcoin_std_resid)[0,1]
+    print('Correlation: ', corr)
+
+
 
 
 def main():
-    # S&P 500 data cleaning
-    sp_data = pd.read_csv('S&P500 2020.csv')
-    sp_data = sp_data[['Date', 'Adj Close']]
-    sp_data['Date'] = pd.to_datetime(sp_data['Date'])
-    sp_data = sp_data.rename(columns={'Adj Close': 'Price'})
-    sp_data['Return'] = sp_data['Price'].pct_change() * 100
-    sp_data = sp_data.dropna()
-    sp_data.set_index('Date', inplace=True)
+    # S&P 500 return cleaning
+    sp_data = return_processing('S&P500 2020.csv')
+    #Bitcoin return cleaning
+    bitcoin_data = return_processing('Bitcoin 2020.csv')
+    # AAPL
+    AAPL_data = return_processing('AAPL 2020.csv')
+    # Fidelity U.S. Bond Index
+    FXNAX_data = return_processing('FXNAX 2020.csv')
 
-    #Bitcoin data cleaning
-    bitcoin_data = pd.read_csv('Bitcoin 2020.csv')
-    bitcoin_data = bitcoin_data[['Date', 'Adj Close']]
-    bitcoin_data['Date'] = pd.to_datetime(bitcoin_data['Date'])
-    bitcoin_data = bitcoin_data.rename(columns={'Adj Close': 'Price'})
-    bitcoin_data['Return'] = bitcoin_data['Price'].pct_change() * 100
-    bitcoin_data = bitcoin_data.dropna()
-    bitcoin_data.set_index('Date', inplace=True)
+
 
     #GARCH Model functions
     # GARCH_model_analysis(sp_data)
     # mean_model(sp_data)
     # vol_model_asym(bitcoin_data)
     # rolling_window_forecast(sp_data)
-    VaR_analysis(bitcoin_data)
+    # VaR_analysis(bitcoin_data)
+    dynamic_covariance(sp_data,AAPL_data)
 
 
 '''Main Function'''
