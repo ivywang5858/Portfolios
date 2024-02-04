@@ -1,3 +1,4 @@
 # Portfolio Cases
-GARCH MODEL Testing
 Monte Carlo
+GARCH Model Testing
+AR,MA,ARIMA Model Testing
