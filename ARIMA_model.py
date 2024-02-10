@@ -94,9 +94,35 @@ def dynamic_forecast(data):
 
 # Differencing and fitting ARMA
 def diff_fit_ARMA(data):
+    data.index = pd.DatetimeIndex(data.index).to_period('D')
     # take the first difference
-    data_diff = data.diff().dropna()
+    data_diff = data['Price'].diff().dropna()
     # create ARMA(2,2) model
+    arma = ARIMA(data_diff,order = (2,0,2))
+    # Fit model
+    arma_results = arma.fit()
+    # print(arma_results.summary())
+
+    # Unrolling ARMA forecast - forecast the abs value of price dataset
+    # Make arma forecast of next 10 differences
+    arma_diff_forecast = arma_results.get_forecast(steps = 10).predicted_mean
+    # print(arma_diff_forecast)
+    # Integrate the diff forecast
+    arma_int_forecast = np.cumsum(arma_diff_forecast)
+    # Make abs value forecast
+    arma_value_forecast = arma_int_forecast + data.iloc[-1,0]
+    print(arma_value_forecast)
+
+# Fit using ARIMA model
+def fit_ARIMA(data):
+    # Create ARIMA(2,1,2) model
+    arima = ARIMA(data['Price'], order = (2,1,2))
+    # Fit ARIMA model
+    arima_results = arima.fit()
+    # Make ARIMA forecast of next 10 values
+    arima_value_forecast = arima_results.get_forecast(steps = 10).predicted_mean
+    print(arima_value_forecast)
+
 
 
 def main():
@@ -109,6 +135,7 @@ def main():
     # one_step_ahead_pred(AAPL_data)
     # dynamic_forecast(AAPL_data)
     diff_fit_ARMA(AAPL_data)
+    fit_ARIMA(AAPL_data)
 
 
 
