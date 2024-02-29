@@ -6,6 +6,7 @@ from GARCH_model import return_processing
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.arima_process import arma_generate_sample
 from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 
 #Augmented Dicky-Fuller test - test for stationarity
@@ -123,6 +124,19 @@ def fit_ARIMA(data):
     arima_value_forecast = arima_results.get_forecast(steps = 10).predicted_mean
     print(arima_value_forecast)
 
+def ACF_PACF(data):
+    # AR(p): ACF - tails off, PACF - cuts off after lag p
+    # MA(q): ACF - cuts off after lag p, PACF - tails off
+    # ARMA(p,q): ACF - tails off,  PACF - tails off
+    data = data['Price']
+    # create figure
+    fig, (ax1, ax2) = plt.subplots(2,1, figsize = (12,8))
+    # ACF
+    plot_acf(data,lags=10,zero=False,ax = ax1)
+    # PACF
+    plot_pacf(data,lags=10,zero=False,ax = ax2)
+    plt.show()
+
 
 
 def main():
@@ -134,8 +148,12 @@ def main():
     # Gen_ARMA_data()
     # one_step_ahead_pred(AAPL_data)
     # dynamic_forecast(AAPL_data)
-    diff_fit_ARMA(AAPL_data)
-    fit_ARIMA(AAPL_data)
+    # diff_fit_ARMA(AAPL_data)
+    # fit_ARIMA(AAPL_data)
+
+    # The best of the best models
+    ACF_PACF(AAPL_data)
+
 
 
 
