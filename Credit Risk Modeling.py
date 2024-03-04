@@ -8,6 +8,9 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from sklearn.metrics import precision_recall_fscore_support
+import xgboost as xgb
+from sklearn.model_selection import cross_val_score
+
 
 def data_extraction(file):
     data = pd.read_csv(file)
@@ -193,6 +196,101 @@ def default_recall_rate(cr_loan_clean):
     avg_loan_amnt = 9583.600936895346
     # Calculate the estimated impact of the new default recall rate
     print(avg_loan_amnt * num_defaults * (1 - default_recall))
+
+def gradient_boosted_tree_model(cr_loan_clean):
+    X = cr_loan_clean[['loan_int_rate', 'person_emp_length', 'person_income']]
+    y = cr_loan_clean[['loan_status']]
+    # Use test_train_split to create the training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.4, random_state=123)
+    # Train a model
+    clf_gbt = xgb.XGBClassifier().fit(X_train, np.ravel(y_train))
+    # Predict with a model
+    gbt_preds = clf_gbt.predict_proba(X_test)
+    # Create dataframes of first five predictions, and first five true labels
+    preds_df = pd.DataFrame(gbt_preds[:, 1][0:5], columns=['prob_default'])
+    true_df = y_test.head()
+    # Concatenate and print the two data frames for comparison
+    print(pd.concat([true_df.reset_index(drop=True), preds_df], axis=1))
+
+    # Predict the labels for loan status
+    gbt_preds = clf_gbt.predict(X_test)
+    # Check the values created by the predict method
+    print(gbt_preds)
+    # Print the classification report of the model
+    target_names = ['Non-Default', 'Default']
+    print(classification_report(y_test, gbt_preds, target_names=target_names))
+
+def col_importance(cr_loan_clean):
+    X = cr_loan_clean[['loan_int_rate', 'person_emp_length', 'person_income']]
+    y = cr_loan_clean[['loan_status']]
+    # Use test_train_split to create the training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.4, random_state=123)
+    # Create and train the model on the training data
+    clf_gbt = xgb.XGBClassifier().fit(X_train, np.ravel(y_train))
+    # Print the column importances from the model
+    print(clf_gbt.get_booster().get_score(importance_type='weight'))
+
+def cross_validation(cr_loan_clean):
+    X = cr_loan_clean[['loan_int_rate', 'person_emp_length', 'person_income']]
+    y = cr_loan_clean[['loan_status']]
+    # Use test_train_split to create the training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.4, random_state=123)
+    # Set the values for number of folds and stopping iterations
+    n_folds = 5
+    early_stopping = 10
+    # Create the DTrain matrix for XGBoost
+    DTrain = xgb.DMatrix(X_train, label=y_train)
+    # Create the data frame of cross validations
+    params = {'objective': 'binary:logistic', 'seed': 123, 'eval_metric': 'auc'}
+    cv_df = xgb.cv(params, DTrain, num_boost_round=5, nfold=n_folds,
+                   early_stopping_rounds=early_stopping)
+    # Print the cross validations data frame
+    print(cv_df)
+
+    # cv_results_big = xgb.cv(params, DTrain, num_boost_round = 600, nfold=10,
+    #         shuffle = True)
+    # # Print the first five rows of the CV results data frame
+    # print(cv_results_big.head())
+    # # Calculate the mean of the test AUC scores
+    # print(np.mean(cv_results_big['test-auc-mean']).round(2))
+    # # Plot the test AUC scores for each iteration
+    # plt.plot(cv_results_big['test-auc-mean'])
+    # plt.title('Test AUC Score Over 600 Iterations')
+    # plt.xlabel('Iteration Number')
+    # plt.ylabel('Test AUC Score')
+    # plt.show()
+
+    # Create a gradient boosted tree model using two hyperparameters
+    gbt = xgb.XGBClassifier(learning_rate=0.1, max_depth=7)
+    # Calculate the cross validation scores for 4 folds
+    cv_scores = cross_val_score(gbt, X_train, np.ravel(y_train), cv=4)
+    # Print the cross validation scores
+    print(cv_scores)
+    # Print the average accuracy and standard deviation of the scores
+    print("Average accuracy: %0.2f (+/- %0.2f)" % (cv_scores.mean(),
+                                                   cv_scores.std() * 2))
+def undersampling(cr_loan_clean):
+    X = cr_loan_clean[['loan_int_rate', 'person_emp_length', 'person_income']]
+    y = cr_loan_clean[['loan_status']]
+    # Use test_train_split to create the training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.4, random_state=123)
+    X_y_train = pd.concat([X_train.reset_index(drop=True),
+                           y_train.reset_index(drop=True)], axis=1)
+    count_nondefault, count_default = X_y_train['loan_status'].value_counts()
+    # Create data sets for defaults and non-defaults
+    nondefaults = X_y_train[X_y_train['loan_status'] == 0]
+    defaults = X_y_train[X_y_train['loan_status'] == 1]
+
+    # Undersample the non-defaults
+    nondefaults_under = nondefaults.sample(count_default)
+
+    # Concatenate the undersampled nondefaults with defaults
+    X_y_train_under = pd.concat([nondefaults_under.reset_index(drop=True),
+                                 defaults.reset_index(drop=True)], axis=0)
+
+    # Print the value counts for loan status
+    print(X_y_train_under['loan_status'].value_counts())
+
 def main():
     # credit loan data
     cr_loan = data_extraction('cr_loan.csv')
@@ -208,7 +306,11 @@ def main():
     # cr_loan_prep = one_hot_encoding(cr_loan_clean)
     # pred_prob_of_def(cr_loan_prep)
     # default_classification_report(cr_loan_clean)
-    default_recall_rate(cr_loan_clean)
+    # default_recall_rate(cr_loan_clean)
+    # gradient_boosted_tree_model(cr_loan_clean)
+    # col_importance(cr_loan_clean)
+    # cross_validation(cr_loan_clean)
+    undersampling(cr_loan_clean)
 
 '''Main Function'''
 if __name__ == '__main__':
