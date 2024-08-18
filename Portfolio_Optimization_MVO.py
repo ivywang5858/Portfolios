@@ -102,7 +102,6 @@ ms_portfolio_sharpe =  1/res.fun
 # print(mv_portfolio)
 # print(ms_portfolio_sharpe)
 
-
 # https://github.com/robertmartin8/PyPortfolioOpt/blob/master/cookbook/2-Mean-Variance-Optimisation.ipynb
 # https://github.com/omartinsky/BlackLitterman/blob/master/black_litterman.ipynb (scipy.optimize)
 # https://www.quantandfinancial.com/2013/07/mean-variance-portfolio-optimization.html
