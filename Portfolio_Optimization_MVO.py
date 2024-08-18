@@ -8,6 +8,7 @@ from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt import risk_models
 from pypfopt import expected_returns
 import scipy.optimize as sco
+import scipy
 
 # Setting the plotting style to be colorblind-friendly
 plt.style.use("seaborn-v0_8-colorblind")
@@ -155,7 +156,7 @@ sortino_ratio = (expected_return - 0)/down_stdev
 # VaR
 # Calculate historical VaR(95)
 var_95 = np.percentile(stock_return_df, 5)
-print(var_95)
+# print(var_95)
 # Sort the returns for plotting
 sorted_rets = sorted(stock_return_df)
 # Plot the probability of each sorted return quantile
@@ -167,7 +168,7 @@ plt.axvline(x=var_95, color='r', linestyle='-', label='VaR 95: {0:.2f}%'.format(
 #CVaR
 # Historical CVaR 95
 cvar_95 = stock_return_df[stock_return_df <= var_95].mean()
-print(cvar_95)
+# print(cvar_95)
 # Sort the returns for plotting
 sorted_rets = sorted(stock_return_df)
 # Plot the probability of each return quantile
@@ -176,6 +177,11 @@ plt.hist(sorted_rets, density=True, stacked=True)
 plt.axvline(x=var_95, color="r", linestyle="-", label='VaR 95: {0:.2f}%'.format(var_95))
 plt.axvline(x=cvar_95, color='b', linestyle='-', label='CVaR 95: {0:.2f}%'.format(cvar_95))
 # plt.show()
+
+losses = pd.Series(scipy.stats.norm.rvs(size = 1000))
+VaR_95 = scipy.stats.norm.ppf(0.95)
+CVaR_95 = (1/(1-0.95))*scipy.stats.norm.expect(lambda x: x,lb = VaR_95)
+print(CVaR_95)
 
 # Parametric VaR
 # Import norm from scipy.stats
@@ -188,4 +194,4 @@ vol = np.std(stock_return_df)
 confidence_level = 0.05
 # Calculate Parametric VaR
 var_95 = norm.ppf(confidence_level, mu, vol)
-print('Mean: ', str(mu), '\nVolatility: ', str(vol), '\nVaR(95): ', str(var_95))
+# print('Mean: ', str(mu), '\nVolatility: ', str(vol), '\nVaR(95): ', str(var_95))
